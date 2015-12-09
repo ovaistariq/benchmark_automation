@@ -6,6 +6,9 @@
 AWS_PROFILE=
 AWS_CLI="$(which aws) --profile=$AWS_PROFILE"
 
+# tmp files needed to manage benchmark instances will be created on this path, using a subdirectory per benchmark
+AWS_BENCHMARKS_WORKSPACE=~/percona/benchmarks
+
 check_if_configured()
 {
    [ -z "$AWS_PROFILE" ] && { $(dirname $0)/setup_env.sh; exit; }
