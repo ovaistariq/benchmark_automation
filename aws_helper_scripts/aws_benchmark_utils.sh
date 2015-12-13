@@ -32,11 +32,13 @@ validate_instance()
 create_volume()
 {
     type=$1; iops=$2; size=$3
+    arg_iops="--iops $iops" # this is a hack, so that if the volume type does not support an iops spec, we don't pass it on. In those cases, set it to 0 when calling. 
+    [ $iops -eq 0 ] && arg_iops=""
     $AWS_CLI ec2 create-volume \
 	     --size $size \
 	     --volume-type $type \
-	     --iops $iops \
-	     --availability-zone $BENCHMARK_AZ
+	     --availability-zone $BENCHMARK_AZ \
+	     $arg_iops
 }
 
 launch_instances()
@@ -80,7 +82,14 @@ launch_instances()
 	    size=$(eval echo \$BENCHMARK_INSTANCE_${i}_VOLUME_${j}_SIZE)
 	    create_volume $volume_type $iops $size > $AWS_BENCHMARKS_WORKSPACE/$BENCHMARK_NAME/i${i}_volume_${j}.json
 	    volume_id=$(grep VolumeId $AWS_BENCHMARKS_WORKSPACE/$BENCHMARK_NAME/i${i}_volume_${j}.json|head -1|awk -F: '{print $2}'|tr -d '", ')
-	    $AWS_CLI ec2 attach-volume --volume-id $volume_id --instance-id $instance_id --device xvd$volsuf
+	    volume_ready=0
+	    echo -n "Waiting for volume to become ready before attaching"
+	    while [ $volume_ready -eq 0 ]; do
+		echo -n "."; sleep 1
+		volume_ready=$($AWS_CLI ec2 describe-volumes --volume-ids $volume_id|grep State|grep -c available)
+            done
+	    echo
+	    $AWS_CLI ec2 attach-volume --volume-id $volume_id --instance-id $instance_id --device xvd$volsuf > /dev/null
 	    j=$((j+1)); volsuf=$(echo $volsuf|tr 'a-z' 'b-z') # this will obviously fail if we add volume z ...
 	    volume_type=$(eval echo \$BENCHMARK_INSTANCE_${i}_VOLUME_${j}_TYPE)
 	done
@@ -89,6 +98,8 @@ launch_instances()
     done
 }
 
+# TODO: Must wait until instance is terminated before attempting to delete the volume. 
+# Alternatively, waitw until volume is 'available' before attempting the delete
 terminate_instances()
 {
     benchmark_sanity_check
@@ -100,6 +111,13 @@ terminate_instances()
     $AWS_CLI ec2 terminate-instances --instance-ids $instances || die 30 "terminate-instances failed, not removing working directory. Please inspect $AWS_BENCHMARKS_WORKSPACE/$BENCHMARK_NAME and then manually terminate the instances"
     for volume in $(ls $AWS_BENCHMARKS_WORKSPACE/$BENCHMARK_NAME/*_volume_*json); do
 	    volume_id=$(grep VolumeId $volume|head -1|awk -F: '{print $2}'|tr -d '", ')
+	    echo -n "Waiting for volume $volume_id to become available before deleting it"
+	    available=0
+	    while [ $available -eq 0 ]; do
+		echo -n "."; sleep 1
+		available=$($AWS_CLI ec2 describe-volumes --volume-ids $volume_id|grep State|grep -c available)
+            done
+	    echo
 	    $AWS_CLI ec2 delete-volume --volume-id $volume_id
     done
     rm -rf $AWS_BENCHMARKS_WORKSPACE/$BENCHMARK_NAME
@@ -137,8 +155,8 @@ BENCHMARK_INSTANCE_1_NAME=server
 BENCHMARK_INSTANCE_1_AMI=ami-f0011a91
 BENCHMARK_INSTANCE_1_SECURITY_GROUPS="sg-10a48f73"
 BENCHMARK_INSTANCE_1_ENABLE_PUBLIC_IP=1
-BENCHMARK_INSTANCE_1_VOLUME_0_TYPE=gp2
-BENCHMARK_INSTANCE_1_VOLUME_0_IOPS=1500
+BENCHMARK_INSTANCE_1_VOLUME_0_TYPE=io1
+BENCHMARK_INSTANCE_1_VOLUME_0_IOPS=1500 #set this to 0 for volume types standard and gp2
 BENCHMARK_INSTANCE_1_VOLUME_0_SIZE=500
 
 EOF
