@@ -9,7 +9,8 @@ benchmark_sanity_check()
     [ -z "$BENCHMARK_NAME" ] && die 2 "BENCHMARK_NAME not set"
     [ -z "$BENCHMARK_KEY_PAIR" ] && die 3 "BENCHMARK_KEY_PAIR not set"
     [ -z "$BENCHMARK_SUBNET_ID" ] && die 4 "BENCHMARK_SUBNET_ID not set"
-    [ -z "$BENCHMARK_INSTANCE_0_TYPE" ] && die 5 "BENCHMARK_INSTANCE_0_TYPE not set"
+    [ -z "$BENCHMARK_AZ" ] && die 5 "BENCHMARK_AZ not set"
+    [ -z "$BENCHMARK_INSTANCE_0_TYPE" ] && die 6 "BENCHMARK_INSTANCE_0_TYPE not set"
 }
 
 # Inner function so no sanity check on input
@@ -25,6 +26,17 @@ validate_instance()
     ami=$(eval echo \$BENCHMARK_INSTANCE_${instance}_AMI)
     security_groups=$(eval echo \$BENCHMARK_INSTANCE_${instance}_SECURITY_GROUPS)
     [ -z "$ami" -o -z "$security_groups" ] && die 20 "Incomplete instance ($instance)"
+}
+
+# Inner function, so no sanity check on input args
+create_volume()
+{
+    type=$1; iops=$2; size=$3
+    $AWS_CLI ec2 create-volume \
+	     --size $size \
+	     --volume-type $type \
+	     --iops $iops \
+	     --availability-zone $BENCHMARK_AZ
 }
 
 launch_instances()
@@ -49,12 +61,29 @@ launch_instances()
 		 --security-group-ids $security_groups \
 		 --subnet-id "$BENCHMARK_SUBNET_ID" \
 		 --enable-api-termination $public_addr > $AWS_BENCHMARKS_WORKSPACE/$BENCHMARK_NAME/instance_${i}.json
+	instance_id=$(grep InstanceId $AWS_BENCHMARKS_WORKSPACE/$BENCHMARK_NAME/instance_${i}.json|head -1|awk -F: '{print $2}'|tr -d '", ')
 	[ -n "$name" ] && {
 	    # only set the Name tag if a name was specified
-	    instance_id=$(grep InstanceId $AWS_BENCHMARKS_WORKSPACE/$BENCHMARK_NAME/instance_${i}.json|head -1|awk -F: '{print $2}'|tr -d '", ')
 	    name=$(whoami)-${BENCHMARK_NAME}-${name}
 	    $AWS_CLI ec2 create-tags --resources "$instance_id" --tags Key="Name",Value="$name"
 	}
+	j=0; volsuf=g; is_running=0
+	volume_type=$(eval echo \$BENCHMARK_INSTANCE_${i}_VOLUME_${j}_TYPE)
+	while [ -n "$volume_type" ]; do
+	    echo -n "Waiting for instance to start before creating and attaching volumes"
+	    while [ $is_running -eq 0 ]; do
+		echo -n "."; sleep 1
+		is_running=$($AWS_CLI ec2 describe-instances --instance-ids $instance_id|grep -c running)
+            done
+	    echo 
+	    iops=$(eval echo \$BENCHMARK_INSTANCE_${i}_VOLUME_${j}_IOPS)
+	    size=$(eval echo \$BENCHMARK_INSTANCE_${i}_VOLUME_${j}_SIZE)
+	    create_volume $volume_type $iops $size > $AWS_BENCHMARKS_WORKSPACE/$BENCHMARK_NAME/i${i}_volume_${j}.json
+	    volume_id=$(grep VolumeId $AWS_BENCHMARKS_WORKSPACE/$BENCHMARK_NAME/i${i}_volume_${j}.json|head -1|awk -F: '{print $2}'|tr -d '", ')
+	    $AWS_CLI ec2 attach-volume --volume-id $volume_id --instance-id $instance_id --device xvd$volsuf
+	    j=$((j+1)); volsuf=$(echo $volsuf|tr 'a-z' 'b-z') # this will obviously fail if we add volume z ...
+	    volume_type=$(eval echo \$BENCHMARK_INSTANCE_${i}_VOLUME_${j}_TYPE)
+	done
 	i=$((i+1))
 	instance_type=$(eval echo \$BENCHMARK_INSTANCE_${i}_TYPE)
     done
@@ -69,6 +98,10 @@ terminate_instances()
 	    instances="$instance_id $instances"
     done
     $AWS_CLI ec2 terminate-instances --instance-ids $instances || die 30 "terminate-instances failed, not removing working directory. Please inspect $AWS_BENCHMARKS_WORKSPACE/$BENCHMARK_NAME and then manually terminate the instances"
+    for volume in $(ls $AWS_BENCHMARKS_WORKSPACE/$BENCHMARK_NAME/*_volume_*json); do
+	    volume_id=$(grep VolumeId $volume|head -1|awk -F: '{print $2}'|tr -d '", ')
+	    $AWS_CLI ec2 delete-volume --volume-id $volume_id
+    done
     rm -rf $AWS_BENCHMARKS_WORKSPACE/$BENCHMARK_NAME
 }
 
@@ -91,6 +124,7 @@ The script should be based on this example:
 BENCHMARK_NAME=tokudb_inserts
 BENCHMARK_KEY_PAIR=fipar
 BENCHMARK_SUBNET_ID=subnet-5371333b
+BENCHMARK_AZ=us-west-2
 
 BENCHMARK_INSTANCE_0_TYPE=t2.medium
 BENCHMARK_INSTANCE_0_NAME=client
@@ -103,6 +137,9 @@ BENCHMARK_INSTANCE_1_NAME=server
 BENCHMARK_INSTANCE_1_AMI=ami-f0011a91
 BENCHMARK_INSTANCE_1_SECURITY_GROUPS="sg-10a48f73"
 BENCHMARK_INSTANCE_1_ENABLE_PUBLIC_IP=1
+BENCHMARK_INSTANCE_1_VOLUME_0_TYPE=gp2
+BENCHMARK_INSTANCE_1_VOLUME_0_IOPS=1500
+BENCHMARK_INSTANCE_1_VOLUME_0_SIZE=500
 
 EOF
     exit
