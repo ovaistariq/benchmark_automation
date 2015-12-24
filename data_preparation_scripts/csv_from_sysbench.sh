@@ -5,6 +5,17 @@
 # to these: 
 # oltp,10000,16,10,902.58,139.75,224.90
 
+# Suggested way to invoke it for all files on a dir with files with names like this one:  
+# toku.2500.oltp.io3000.tokudb_config.txt
+# 
+# for f in toku*; do
+#     size=$(echo $f|awk -F. '{print $2}')
+#     volume_type=$(echo $f|awk -F. '{print $4}')
+#     test=$(echo $f|awk -F. '{print $3}')
+#     ./1.sh $f $test $size $volume_type
+#     echo
+# done
+
 [[ $# -ne 3 || ! -r $1 ]] && {
 cat <<EOF>&2
   Error: missing or invalid arguments: ($*)
