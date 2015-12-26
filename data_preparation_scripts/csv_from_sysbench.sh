@@ -16,22 +16,25 @@
 #     echo
 # done
 
-[[ $# -ne 3 || ! -r $1 ]] && {
+[[ $# -lt 3 || ! -r $1 ]] && {
 cat <<EOF>&2
   Error: missing or invalid arguments: ($*)
-  usage: $0 <file> <bench> <size>
+  usage: $0 <file> <bench> <size> [threads]
     where: 
      - <file> is the filename to a sysbench output file
      - <bench> is the test name (i.e. oltp, update_index, etc)
      - <size> is the table size in some multiple of rows (usually 1k)
-
+     - [threads], optional, is the number of threads used for the test (it is also obtained from sysbench)
 EOF
 exit 1
 }
 
-file=$1; bench=$2; size=$3
+file=$1; bench=$2; size=$3; threads=$4
 
-echo "workload,size,threads,ts,writes,reads,response_time,tps"
+header_threads=""
+[ -n "$threads" ] && header_threads=",user_provided_threads" && threads=",$threads"
+
+echo "workload,size,threads,ts,writes,reads,response_time,tps$header_threads"
 
 cat $file | awk -F ',' '{
 	f1=""
@@ -62,5 +65,5 @@ cat $file | awk -F ',' '{
                 }
         }
 	if (ts)
-	print bench","size","threads","ts","writes","reads","response_time","tps
-}' bench=$bench size=$size 
+	print bench","size","threads","ts","writes","reads","response_time","tps user_threads
+}' bench=$bench size=$size user_threads=$threads
