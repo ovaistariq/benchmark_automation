@@ -1,0 +1,3 @@
+Utilities to collect metrics/information during benchmarking experiments (independently and in addition to the data collected by the actual benchmark). 
+
+The collect-common.sh file was copied (but not forked, this is an independent copy) from https://github.com/Percona-Lab/ognom-toolkit
