@@ -17,6 +17,9 @@ cat <<EOF>&2
 
    env _TESTS="oltp update_index" _THREADS="16 32" _SIZE="1000 10000" $0 --rand-type=pareto --rand-init=on --report-interval=10 --mysql-host=sbhost --mysql-db=sbtest --max-time=7200 --max-requests=0
 
+   env _TESTS_PATH=/usr/share/doc/sysbench/tests/db/ _EXP_NAME=sample _TESTS="oltp update_index" _THREADS="1 2 4" _SIZE="10 100" ./run_sysbench.sh --oltp_tables_count=2 --mysql-user=sysbench --mysql-password=sysbench --mysql_table_engine=innodb --rand-type=pareto --rand-init=on --report-interval=10 --mysql-db=sbtest --max-time=5 --max-requests=0 
+
+
 EOF
 
 exit 1
@@ -30,9 +33,11 @@ for test in $_TESTS; do
     pushd $test
     for threads in $_THREADS; do
 	for size in $_SIZE; do
-	    sysbench --test=$_TESTS_PATH$test --num-threads=$threads --oltp-table-size=$size $* prepare
-	    sysbench --test=$_TESTS_PATH$test --num-threads=$threads --oltp-table-size=$size $* run | tee $_EXP_NAME.thr$threads.sz$size.test$test.txt 
-	    sysbench --test=$_TESTS_PATH$test --num-threads=$threads --oltp-table-size=$size $* cleanup
+	    echo "Starting sysbench for test=$test, threads=$threads, size=$size" 
+	    sysbench --test=$_TESTS_PATH$test.lua --num-threads=$threads --oltp-table-size=$size $* prepare
+	    sysbench --test=$_TESTS_PATH$test.lua --num-threads=$threads --oltp-table-size=$size $* run | tee $_EXP_NAME.thr$threads.sz$size.test$test.txt 
+	    sysbench --test=$_TESTS_PATH$test.lua --num-threads=$threads --oltp-table-size=$size $* cleanup
         done
     done
+    popd
 done
