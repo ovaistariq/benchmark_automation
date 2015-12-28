@@ -25,6 +25,12 @@ cat <<EOF>&2
      - <bench> is the test name (i.e. oltp, update_index, etc)
      - <size> is the table size in some multiple of rows (usually 1k)
      - [threads], optional, is the number of threads used for the test (it is also obtained from sysbench)
+  Additionally, env variables control header output: 
+     - If _NOHEADER is present, only data rows will be printed
+     - If _ONLYHEADER is present, only the header will be printed
+     - If non is present, both header and data rows will be printed
+   The idea is to use _NOHEADER if you'll be concatenating the output to several captures into a single output file.  
+   Bear in mind that if *both* are set, nothing will be printed. 
 EOF
 exit 1
 }
@@ -34,36 +40,38 @@ file=$1; bench=$2; size=$3; threads=$4
 header_threads=""
 [ -n "$threads" ] && header_threads=",user_provided_threads" && threads=",$threads"
 
-echo "workload,size,threads,ts,writes,reads,response_time,tps$header_threads"
+[ -z "$_NOHEADER" ] && echo "workload,size,threads,ts,writes,reads,response_time,tps$header_threads"
+[ -n "$_ONLYHEADER" ] && exit
 
-cat $file | awk -F ',' '{
-	f1=""
+sed -n '/^Threads started/,/.*test statistics:$/p' < $file | grep '\[' | awk -F ',' '{
+	ts=""
         for(i=1; i<=NF; i++) {
                 tmp=match($i, /\[[[:space:]]*(.*)s\]/,a)
                 if(tmp) {
                         ts=a[1]
                 }
-                tmp=match($i, /[[:space:]]*writes:[[:space:]]+(.*)/,b)
+                tmp=match($i, /[[:space:]]*writes:[[:space:]]+(.*)/,a)
                 if(tmp) {
-                        writes=b[1]
+                        writes=a[1]
+                } 
+                tmp=match($i, /[[:space:]]*reads:[[:space:]]+(.*)/,a)
+                if(tmp) {
+                        reads=a[1]
+                } 
+                tmp=match($i, /[[:space:]]*response time:[[:space:]]+(.*)ms/,a)
+                if(tmp) {
+                        response_time=a[1]
+                } 
+                tmp=match($i, /[[:space:]]*tps:[[:space:]]+(.*)/,a)
+                if(tmp) {
+                        tps=a[1]
                 }
-                tmp=match($i, /[[:space:]]*reads:[[:space:]]+(.*)/,b)
+                tmp=match($i, /[[:space:]]*threads:[[:space:]]+(.*)/,a)
                 if(tmp) {
-                        reads=b[1]
-                }
-                tmp=match($i, /[[:space:]]*response time:[[:space:]]+(.*)ms/,b)
-                if(tmp) {
-                        response_time=b[1]
-                }
-                tmp=match($i, /[[:space:]]*tps:[[:space:]]+(.*)/,b)
-                if(tmp) {
-                        tps=b[1]
-                }
-                tmp=match($i, /[[:space:]]*threads:[[:space:]]+(.*)/,b)
-                if(tmp) {
-                        threads=b[1]
+                        threads=a[1]
                 }
         }
-	if (ts)
-	print bench","size","threads","ts","writes","reads","response_time","tps user_threads
-}' bench=$bench size=$size user_threads=$threads
+	if (ts) 
+ 		print bench "," size "," threads "," ts "," writes "," reads "," response_time "," tps user_threads
+}' bench=$2 size=$3 workload=$4
+

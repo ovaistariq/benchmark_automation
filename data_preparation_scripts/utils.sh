@@ -14,6 +14,7 @@ EOF
 
     return 1	
     }
+    unset _threads _size _workload
     export _threads=$(echo $1|awk -F. '{print $2}'|sed 's/thr//')
     export _size=$(echo $1|awk -F. '{print $3}'|sed 's/sz//')
     export _workload=$(echo $1|awk -F. '{print $4}'|sed "s/$2//")
