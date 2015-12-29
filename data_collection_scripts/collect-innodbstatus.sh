@@ -2,7 +2,7 @@
 
 . $(dirname $0)/collect-common.sh
 
-[ $# -ne 2 ] && {
+[ $# -lt 2 ] && {
     usage
     echo "Any additional arguments are passed directly to the mysql client">&2
     exit 1
