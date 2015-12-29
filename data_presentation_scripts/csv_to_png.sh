@@ -44,7 +44,7 @@ facet_x=${_FACET_X:-"."}
 facet_y=${_FACET_Y:-"."}
 coerce_y=${_Y_AXIS_COERCE_INT:-0}
 
-facet="+ facet_grid($facet_x ~ $facet_y)"
+facet="+ facet_grid($facet_x ~ $facet_y, labeller = label_both)"
 [ "$facet_x" == "." -a "$facet_y" == "." ] && facet=""
 
 colour=""
