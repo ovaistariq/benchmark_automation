@@ -43,3 +43,11 @@ Now let's generate a tps graph for the oltp experiment, faceted again by threads
 	env _INPUT_FILE=../oltp.csv _OUTPUT_FILE=../oltp.png _FACTOR=workload _FACTOR_LABEL=Workload _X_AXIS=ts _X_AXIS_LABEL="Time in secs (10 sec incr)" _Y_AXIS=tps _Y_AXIS_LABEL="Transactions per second" _GRAPH_TITLE="TokuDB transactions throughput" _FACET_X=threads _FACET_Y=size ../data_presentation_scripts/csv_to_png.sh
 
 The resulting fule for my tests is here: ![](./oltp.png)
+
+You can also have a simple graph, faceted on only one variable (because we fix the # of threads at 1)
+
+    head -1 ../alldata.csv > ../update_index.csv
+    grep ^update_index,[0-9]*,1, ../alldata.csv >> ../update_index.csv
+	env _INPUT_FILE=../update_index.csv _OUTPUT_FILE=../update_index.png _X_AXIS=ts _X_AXIS_LABEL="Time in secs (10 sec incr)" _Y_AXIS=writes _Y_AXIS_LABEL="Write throughput" _FACET_X=size _GRAPH_TITLE="TokuDB write throughput" ../data_presentation_scripts/csv_to_png.sh
+
+Which produces ![](./update_index.png)
