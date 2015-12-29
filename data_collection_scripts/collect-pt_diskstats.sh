@@ -13,8 +13,28 @@ timestamp=$(date "+%s")
 
 dest=${TOOLNAME}_$(ts).gz
 trap "rm -f $dest.pid" SIGINT SIGTERM SIGHUP
-# get the header.
-pt-diskstats --iterations=$duration --interval=$interval | gzip -c > $dest &
+
+diskstats_to_csv()
+{
+printed_header=0
+while read line; do
+    [ $(echo $line|grep -c '#ts') -gt 0 ] && {
+       [ $printed_header -eq 0 ] && {
+	    printed_header=1
+	    echo $line|sed 's/^ *#//
+			    s/  */,/g'
+       }
+       continue
+    }
+    echo $line|grep ^$>/dev/null && continue
+    echo $line|sed 's/^ *//
+		    s/%//g
+		    s/  */,/g'
+done
+}
+
+# get the data.
+pt-diskstats --iterations=$duration --interval=$interval | diskstats_to_csv | gzip -c > $dest &
 echo $! > $dest.pid
 pid=$!
 # save the pid so we can monitor disk space while the tool runs, and
