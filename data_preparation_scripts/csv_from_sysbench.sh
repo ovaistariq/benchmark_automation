@@ -38,7 +38,8 @@ exit 1
 file=$1; bench=$2; size=$3; threads=$4
 
 header_threads=""
-[ -n "$threads" ] && header_threads=",user_provided_threads" && threads=",$threads"
+user_threads=""
+[ -n "$threads" ] && header_threads=",user_provided_threads" && user_threads=",$threads"
 
 [ -z "$_NOHEADER" ] && echo "workload,size,threads,ts,writes,reads,response_time,tps$header_threads"
 [ -n "$_ONLYHEADER" ] && exit
@@ -73,5 +74,5 @@ sed -n '/^Threads started/,/.*test statistics:$/p' < $file | grep '\[' | awk -F 
         }
 	if (ts) 
  		print bench "," size "," threads "," ts "," writes "," reads "," response_time "," tps user_threads
-}' bench=$2 size=$3 workload=$4
+}' bench=$2 size=$3 workload=$4 user_threads=$user_threads
 
