@@ -14,10 +14,11 @@ TOOLNAME=$(basename $0|awk -F'-' '{print $2}'|sed 's/\.sh//g')
 usage()
 {
 cat <<EOF>&2
-   usage: $0 <interval> <duration>
+   usage: $0 <interval> <duration> [args]
    Run $TOOLNAME <interval> for <duration> seconds (forever if <duration> is 0)
    Output is saved on a timestamped file in the current directory
    Arguments are *not* validated so it's up to you to pass only integer values. 
+   Any additional arguments are passed verbatim to $TOOLNAME
 EOF
 }
 

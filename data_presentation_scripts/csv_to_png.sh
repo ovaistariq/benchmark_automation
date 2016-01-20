@@ -22,12 +22,17 @@ cat <<EOF>&2
      - _FACET_X  : if set, facet X on this variable
      - _FACET_Y  : if set, facet Y on this variable
      - _GRAPH_TITLE : the graph title
+     - _R_EXP : if set, add this R expression to the generated script, after reading the csv file, and before generating the graph
+       The csv file is loaded into the 'data' variable. Remember to use single quotes or otherwise escape '$' for this variable. 
+     - _DRY_RUN : if set, don't do anything, just print the generated R script to stdout
 
 Examples: 
 
 env _INPUT_FILE=alldata.csv _OUTPUT_FILE=genplot.png _FACTOR=workload _FACTOR_LABEL="Workload" _X_AXIS=ts _X_AXIS_LABEL="Time in secs (10 sec increment)" _Y_AXIS=writes _Y_AXIS_LABEL="write throughput" _Y_AXIS_COERCE_INT=1 _GRAPH_TITLE="TokuDB Write Throughput" ./csv_to_png.sh
 
 env _FACET_X=size _INPUT_FILE=alldata.csv _OUTPUT_FILE=genplot.png _FACTOR=workload _FACTOR_LABEL="Workload" _X_AXIS=ts _X_AXIS_LABEL="Time in secs (10 sec increment)" _Y_AXIS=writes _Y_AXIS_LABEL="write throughput" _Y_AXIS_COERCE_INT=1 _GRAPH_TITLE="TokuDB Write Throughput" ./csv_to_png.sh
+
+env _FACET_X=size _INPUT_FILE=alldata.csv _OUTPUT_FILE=genplot.png _FACTOR=workload _FACTOR_LABEL="Workload" _X_AXIS=ts _X_AXIS_LABEL="Time in secs (10 sec increment)" _Y_AXIS=writes _Y_AXIS_LABEL="write throughput" _Y_AXIS_COERCE_INT=1 _GRAPH_TITLE="TokuDB Write Throughput" _R_EXP='data <- data[data$size == 1000,]' ./csv_to_png.sh
 
 EOF
 exit 1
@@ -70,11 +75,14 @@ if ($coerce_y == 1) {
    data\$display_y_axis <- as.integer(data\$$y_axis)
 } 
 
+$_R_EXP
+
 ggplot(data, aes(x=$x_axis, y=$y_axis$colour)) + geom_jitter() $scale_colour $facet + xlab("$_X_AXIS_LABEL") + ylab("$_Y_AXIS_LABEL") + ggtitle("$_GRAPH_TITLE") + scale_y_continuous(breaks = extended_range_breaks()(rbind(0,data\$display_y_axis)))  + expand_limits(x=0, y=0)  + theme_bw() + theme(panel.grid = element_line(colour="#010101",size=1), panel.background = element_rect(colour="#000000"), plot.background = element_rect(colour="#000000"), strip.background = element_rect(colour="#010101"))
 ggsave("$output",scale=$ratio)
 
 EOF
 
-R CMD BATCH /tmp/csv_to_png.$$.r && rm -f *Rout || cat /tmp/csv_to_png.$$.r # print the generated script if it fails, for debugging
-
+[ -n "$_DRY_RUN" ] && cat /tmp/csv_to_png.$$.r || {
+    R CMD BATCH /tmp/csv_to_png.$$.r && rm -f *Rout || cat /tmp/csv_to_png.$$.r # print the generated script if it fails, for debugging
+}
 rm -f /tmp/csv_to_png.$$.r
