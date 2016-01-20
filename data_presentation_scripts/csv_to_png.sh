@@ -34,6 +34,8 @@ env _FACET_X=size _INPUT_FILE=alldata.csv _OUTPUT_FILE=genplot.png _FACTOR=workl
 
 env _FACET_X=size _INPUT_FILE=alldata.csv _OUTPUT_FILE=genplot.png _FACTOR=workload _FACTOR_LABEL="Workload" _X_AXIS=ts _X_AXIS_LABEL="Time in secs (10 sec increment)" _Y_AXIS=writes _Y_AXIS_LABEL="write throughput" _Y_AXIS_COERCE_INT=1 _GRAPH_TITLE="TokuDB Write Throughput" _R_EXP='data <- data[data$size == 1000,]' ./csv_to_png.sh
 
+env _FACET_X=size _INPUT_FILE=alldata.csv _OUTPUT_FILE=genplot.png _FACTOR=workload _FACTOR_LABEL="Workload" _X_AXIS=ts _X_AXIS_LABEL="Time in secs (10 sec increment)" _Y_AXIS=writes _Y_AXIS_LABEL="write throughput" _Y_AXIS_COERCE_INT=1 _GRAPH_TITLE="TokuDB Write Throughput" _R_EXP='data <- subset(subset(data, size == 1000), workload %in% c("update_index", "update_non_index"))' ./csv_to_png.sh
+
 EOF
 exit 1
 }
