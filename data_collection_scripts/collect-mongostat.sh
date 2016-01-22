@@ -2,7 +2,7 @@
 
 . $(dirname $0)/collect-common.sh
 
-[ $# -ne 2 ] && {
+[ $# -lt 2 ] && {
     usage
     exit 1
 }
