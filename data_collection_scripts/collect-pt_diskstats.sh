@@ -2,7 +2,7 @@
 
 . $(dirname $0)/collect-common.sh
 
-[ $# -ne 2 ] && {
+[ $# -lt 2 ] && {
     usage
     exit 1
 }
@@ -34,7 +34,7 @@ done
 }
 
 # get the data.
-pt-diskstats --iterations=$duration --interval=$interval | diskstats_to_csv | gzip -c > $dest &
+pt-diskstats --show-timestamps --iterations=$duration --interval=$interval | diskstats_to_csv | gzip -c > $dest &
 echo $! > $dest.pid
 pid=$!
 # save the pid so we can monitor disk space while the tool runs, and
