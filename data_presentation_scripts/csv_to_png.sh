@@ -51,7 +51,7 @@ facet_x=${_FACET_X:-"."}
 facet_y=${_FACET_Y:-"."}
 coerce_y=${_Y_AXIS_COERCE_INT:-0}
 
-facet="+ facet_grid($facet_x ~ $facet_y, labeller = label_both)"
+facet="+ facet_grid($facet_x ~ $facet_y, labeller = label_custom)"
 [ "$facet_x" == "." -a "$facet_y" == "." ] && facet=""
 
 colour=""
@@ -68,6 +68,14 @@ require(ggplot2)
 require(ggthemes) # for extended_range_breaks()
 require(plyr) # to rename columns
 
+label_custom <- function(variable, value) {
+    if (variable=="size") {
+        return (paste(variable,":",value))
+    } else if (variable=="engine"){
+        return (as.character(value))
+    }
+}
+
 data <- read.csv("$input", header=TRUE)
 
 # some duplication here with the goal of making script generation simpler ...
@@ -79,7 +87,7 @@ if ($coerce_y == 1) {
 
 $_R_EXP
 
-ggplot(data, aes(x=$x_axis, y=$y_axis$colour)) + geom_jitter() $scale_colour $facet + xlab("$_X_AXIS_LABEL") + ylab("$_Y_AXIS_LABEL") + ggtitle("$_GRAPH_TITLE") + scale_y_continuous(breaks = extended_range_breaks()(rbind(0,data\$display_y_axis)))  + expand_limits(x=0, y=0)  + theme_bw() + theme(panel.grid = element_line(colour="#010101",size=1), panel.background = element_rect(colour="#000000"), plot.background = element_rect(colour="#000000"), strip.background = element_rect(colour="#010101"))
+ggplot(data, aes(x=$x_axis, y=$y_axis$colour)) + geom_jitter() $scale_colour $facet + xlab("$_X_AXIS_LABEL") + ylab("$_Y_AXIS_LABEL") + ggtitle("$_GRAPH_TITLE") + scale_y_continuous(breaks = extended_range_breaks()(rbind(0,data\$display_y_axis)))  + expand_limits(x=0, y=0)  + theme_bw() + theme(panel.grid = element_line(colour="#010101",size=1), panel.background = element_rect(colour="#000000"), plot.background = element_rect(colour="#000000"), strip.background = element_rect(colour="#010101"), text=element_text(size=20), strip.text=element_text(size=24))
 ggsave("$output",scale=$ratio)
 
 EOF
