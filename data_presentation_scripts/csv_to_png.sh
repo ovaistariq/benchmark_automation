@@ -73,6 +73,8 @@ label_custom <- function(variable, value) {
         return (paste(variable,":",value))
     } else if (variable=="engine"){
         return (as.character(value))
+    } else {
+	return (value)
     }
 }
 
