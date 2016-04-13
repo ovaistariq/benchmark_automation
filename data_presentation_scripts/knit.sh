@@ -3,8 +3,9 @@
 usage()
 {
     cat <<EOF>&2
-usage: $0 <Rmd file>
-knits the input file into md and html output files 
+usage: $0 <Rmd file> [--debug]
+Knits the input file into md and html output files. 
+If --debug is present, the Rout file is not removed
 EOF
     exit
 }
@@ -29,5 +30,8 @@ markdownToHTML('${name}.md','${name}.html')
 browseURL(paste('file:///', file.path(getwd(), '${name}.html'), sep=''))
 EOF
 
+rm_Rout="knit.$$.Rout"
+[ "$2" == "--debug" ] && rm_Rout=""
+
 R CMD BATCH /tmp/knit.$$.R 
-rm -f /tmp/knit.$$.R knit.$$.Rout
+rm -f /tmp/knit.$$.R $rm_Rout 
