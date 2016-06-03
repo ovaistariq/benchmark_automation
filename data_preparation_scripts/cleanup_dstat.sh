@@ -10,7 +10,7 @@ fn="$1"
 sed -n '/^$/,//p' < "$fn" | grep -v ^$ | (
 	i=0
 	while read l; do
-	    [ $i -eq 0 ] && echo -n "$l" || echo $l
+	    [ $i -eq 0 ] && echo -n "i,$l" || echo "$i,$l"
 	    i=$((i+1))
 	done
 )
