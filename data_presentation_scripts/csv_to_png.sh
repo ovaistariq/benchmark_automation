@@ -19,6 +19,7 @@ cat <<EOF>&2
      - _X_AXIS_LABEL : the label to use for the X axis
      - _Y_AXIS_LABEL : the same, for the Y axis
      - _Y_AXIS_COERCE_INT : should the varialbe used for the Y axis be coerced to an integer? (default is no)
+     - _AXIS_HAVE_0 : should the axis be forced to include 0 as a value (default is yes)
      - _FACET_X  : if set, facet X on this variable
      - _FACET_Y  : if set, facet Y on this variable
      - _GRAPH_TITLE : the graph title
@@ -60,6 +61,9 @@ scale_colour=""
     colour=", colour=as.factor($factor)"
     scale_colour="+ scale_colour_discrete(name = \"$factor_label\")"
 }
+
+axis_at_0=" expand_limits(x=0, y=0) + "
+[ "$_AXIS_HAVE_0" == "no" ] && axis_at_0=""
 
 trap "rm -f /tmp/csv_to_png.$$.r" SIGINT SIGTERM
 
@@ -289,7 +293,7 @@ if ($coerce_y == 1) {
 
 $_R_EXP
 
-ggplot(data, aes(x=$x_axis, y=$y_axis$colour)) + geom_jitter() $scale_colour $facet + xlab("$_X_AXIS_LABEL") + ylab("$_Y_AXIS_LABEL") + ggtitle("$_GRAPH_TITLE") + scale_y_continuous(breaks = extended_range_breaks()(data\$display_y_axis))  + expand_limits(x=0, y=0)  + theme_bw() + theme(panel.grid = element_line(colour="#010101",size=1), panel.background = element_rect(colour="#000000"), plot.background = element_rect(colour="#000000"), strip.background = element_rect(colour="#010101"), text=element_text(size=20), strip.text=element_text(size=24))
+ggplot(data, aes(x=$x_axis, y=$y_axis$colour)) + geom_jitter() $scale_colour $facet + xlab("$_X_AXIS_LABEL") + ylab("$_Y_AXIS_LABEL") + ggtitle("$_GRAPH_TITLE") + scale_y_continuous(breaks = extended_range_breaks()(data\$display_y_axis))  + $axis_at_0 theme_bw() + theme(panel.grid = element_line(colour="#010101",size=1), panel.background = element_rect(colour="#000000"), plot.background = element_rect(colour="#000000"), strip.background = element_rect(colour="#010101"), text=element_text(size=20), strip.text=element_text(size=24))
 ggsave("$output",scale=$ratio)
 
 EOF

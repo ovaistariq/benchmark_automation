@@ -5,5 +5,5 @@
     exit 1
 }
 
-grep throughput $1|sed 's/INFO 20[0-9][0-9]-[0-9][0-9]-[0-9][0-9] //'|sed 's/ .*throughput: //'|sed 's/ .*//' > $1.csv
+grep throughput $1|sed 's/INFO 2[0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9] //'|sed 's/,.*throughput: /,/g'|sed 's/ops.*//' > $1.csv
 
