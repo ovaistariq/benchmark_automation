@@ -9,7 +9,6 @@
 
 interval=$1
 duration=$2
-timestamp=$(date "+%s")
 
 dest=${TOOLNAME}_$(ts).gz
 trap "rm -f $dest.pid" SIGINT SIGTERM SIGHUP
@@ -20,10 +19,11 @@ $TOOLNAME ext -i 1 -c 1 -r|grep -v '-'|awk -F '|' '{print $2}'|grep -v ^$|sed 's
        s/,$/\n/' > $dest.header
 # now get the capture. since we're using -r, discard the first row 
 read_first_row=0
+ts=1
 $TOOLNAME ext -i $interval -c $duration -r | awk -F '|' '{print $3}'|sed 's/^ //g'|sed 's/  *$/ /g'|grep -v ^$|sed 's/^ $/_/g' |tr '\n' ','| sed "s/Value/|/g" | tr '|' '\n' |grep -v ^$|\
   sed 's/^  *//g
   s/  */ /g
-  s/,$//'| while read row; do [ $read_first_row -gt 0 ] && echo "$timestamp,$row"; timestamp=$((timestamp+1)); read_first_row=1; done | gzip -c >> $dest & 
+  s/,$//'| while read row; do [ $read_first_row -gt 0 ] && echo "$ts $row"; ts=$((ts+1)); read_first_row=1; done | gzip -c >> $dest & 
 echo $! > $dest.pid
 pid=$!
 # save the pid so we can monitor disk space while the tool runs, and
