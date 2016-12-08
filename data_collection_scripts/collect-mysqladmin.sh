@@ -20,7 +20,9 @@ $TOOLNAME ext -i 1 -c 1 -r|grep -v '-'|awk -F '|' '{print $2}'|grep -v ^$|sed 's
 # now get the capture. since we're using -r, discard the first row 
 read_first_row=0
 ts=1
-$TOOLNAME ext -i $interval -c $duration -r | awk -F '|' '{print $3}'|sed 's/^ //g'|sed 's/  *$/ /g'|grep -v ^$|sed 's/^ $/_/g' |tr '\n' ','| sed "s/Value/|/g" | tr '|' '\n' |grep -v ^$|\
+arg_duration=""
+[ -n "$duration" -a $duration -gt 0 ] && arg_duration="-c $duration"
+$TOOLNAME ext -i $interval $arg_duration -r | awk -F '|' '{print $3}'|sed 's/^ //g'|sed 's/  *$/ /g'|grep -v ^$|sed 's/^ $/_/g' |tr '\n' ','| sed "s/Value/|/g" | tr '|' '\n' |grep -v ^$|\
   sed 's/^  *//g
   s/  */ /g
   s/,$//'| while read row; do [ $read_first_row -gt 0 ] && echo "$ts $row"; ts=$((ts+1)); read_first_row=1; done | gzip -c >> $dest & 
