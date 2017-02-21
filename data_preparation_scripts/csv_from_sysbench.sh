@@ -18,9 +18,9 @@
 
 AWK=awk
 
-awk --version|grep GNU>/dev/null || AWK=gawk
+awk --version|grep GNU &>/dev/null || AWK=gawk
 
-which $AWK || {
+which $AWK &>/dev/null || {
 	echo "$AWK not found, exiting">&2
 	exit 1
 }
