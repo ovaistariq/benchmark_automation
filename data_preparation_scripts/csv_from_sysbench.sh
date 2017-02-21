@@ -16,6 +16,15 @@
 #     echo
 # done
 
+AWK=awk
+
+awk --version|grep GNU>/dev/null || AWK=gawk
+
+which $AWK || {
+	echo "$AWK not found, exiting">&2
+	exit 1
+}
+
 [[ $# -lt 3 || ! -r $1 ]] && {
 cat <<EOF>&2
   Error: missing or invalid arguments: ($*)
@@ -44,7 +53,7 @@ user_threads=""
 [ -z "$_NOHEADER" ] && echo "workload,size,threads,ts,writes,reads,response_time,tps$header_threads"
 [ -n "$_ONLYHEADER" ] && exit
 
-sed -n '/^Threads started/,/.*test statistics:$/p' < $file | grep '\[' | awk -F ',' '{
+sed -n '/^Threads started/,/.*test statistics:$/p' < $file | grep '\[' | $AWK -F ',' '{
 	ts=""
         for(i=1; i<=NF; i++) {
                 tmp=match($i, /\[[[:space:]]*(.*)s\]/,a)
