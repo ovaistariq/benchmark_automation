@@ -21,6 +21,7 @@ trap "rm -f $dest.pid" SIGINT SIGTERM SIGHUP
 # get the data.
 (while :; do
     [ $(date "+%s") -ge $end_time ] && exit
+    echo "DATETIME $(date '+%Y%m%d_%H%M%S')"
     mysql $mysql_args -e 'show engine ndb status\G'
     sleep $interval
 done | gzip -c > $dest) &
