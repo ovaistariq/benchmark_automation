@@ -2,6 +2,7 @@
 
 [ -z "$_TESTS" -o \
   -z "$_THREADS" -o \
+  -z "$_TABLES" -o \
   -z "$_SIZE" ] && {
 cat <<EOF>&2
 
@@ -13,15 +14,16 @@ cat <<EOF>&2
        oltp_read_write".
      - _THREADS : Quoted list of the # of threads to use for each run, i.e.
        "16 32 64"
+     - _TABLES : Number of tables to use for the tests
      - _SIZE : Quoted list of the table sizes to use, in rows, i.e.
        "100000 1000000 10000000"
    
    Any actual input argument will be passed as is to sysbench, so you can run
    this like so:
 
-   env _TESTS="oltp_read_only oltp_read_write" _THREADS="16 32" _SIZE="1000 10000" $0 --rand-type=pareto --rand-init=on --report-interval=10 --mysql-host=sbhost --mysql-db=sbtest --max-time=7200 --max-requests=0
+   _TESTS="oltp_read_only oltp_read_write" _THREADS="16 32" _TABLES=16 _SIZE="1000 10000" $0 --rand-type=pareto --rand-init=on --report-interval=10 --mysql-host=sbhost --mysql-db=sbtest --time=7200
 
-   env _EXP_NAME=sample _TESTS="oltp_read_only oltp_read_write" _THREADS="1 2 4" _SIZE="10 100" ./run_sysbench.sh --oltp_tables_count=2 --mysql-user=sysbench --mysql-password=sysbench --mysql_table_engine=innodb --rand-type=pareto --rand-init=on --report-interval=10 --mysql-db=sbtest --max-time=5 --max-requests=0 
+   _EXP_NAME=sample _TESTS="oltp_read_only oltp_read_write" _THREADS="1 2 4" _TABLES=64 _SIZE="10 100" ./run_sysbench.sh --mysql-user=sysbench --mysql-password=sysbench --mysql_table_engine=innodb --rand-type=pareto --rand-init=on --report-interval=10 --mysql-db=sbtest --time=60
 
 
 EOF
@@ -48,8 +50,8 @@ for test in $_TESTS; do
     for threads in $_THREADS; do
 	for size in $_SIZE; do
 	    echo "Starting sysbench for test=$test, threads=$threads, size=$size"
-	    sysbench ${test_path} --threads=$threads --table-size=$size $* prepare
-	    sysbench ${test_path} --threads=$threads --table-size=$size $* run | tee $_EXP_NAME.thr.$threads.sz.$size.test.$test.txt
+	    sysbench ${test_path} --threads=$threads --tables=$_TABLES --table-size=$size $* prepare
+	    sysbench ${test_path} --threads=$threads --tables=$_TABLES --table-size=$size $* run | tee $_EXP_NAME.thr.$threads.sz.$size.test.$test.txt
 	    sysbench ${test_path} --threads=$threads --table-size=$size $* cleanup
         done
     done
