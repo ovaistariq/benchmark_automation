@@ -47,9 +47,9 @@ for test in $_TESTS; do
     pushd $test
     for threads in $_THREADS; do
 	for size in $_SIZE; do
-	    echo "Starting sysbench for test=$test, threads=$threads, size=$size" 
+	    echo "Starting sysbench for test=$test, threads=$threads, size=$size"
 	    sysbench ${test_path} --threads=$threads --table-size=$size $* prepare
-	    sysbench ${test_path} --threads=$threads --table-size=$size $* run | tee $_EXP_NAME.thr$threads.sz$size.test$test.txt 
+	    sysbench ${test_path} --threads=$threads --table-size=$size $* run | tee $_EXP_NAME.thr.$threads.sz.$size.test.$test.txt
 	    sysbench ${test_path} --threads=$threads --table-size=$size $* cleanup
         done
     done
