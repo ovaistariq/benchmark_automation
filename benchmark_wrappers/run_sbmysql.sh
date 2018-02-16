@@ -21,9 +21,9 @@ cat <<EOF>&2
    Any actual input argument will be passed as is to sysbench, so you can run
    this like so:
 
-   _TESTS="oltp_read_only oltp_read_write" _THREADS="16 32" _TABLES=16 _SIZE="1000 10000" $0 --rand-type=pareto --mysql-host=sbhost --mysql-db=sbtest --time=7200
+   _TESTS="oltp_read_only oltp_read_write" _THREADS="16 32" _TABLES=16 _SIZE="1000 10000" ./run_sbmysql.sh --rand-type=pareto --mysql-host=sbhost --mysql-db=sbtest --time=7200
 
-   _EXP_NAME=sample _TESTS="oltp_read_only oltp_read_write" _THREADS="1 2 4" _TABLES=64 _SIZE="10 100" ./run_sysbench.sh --mysql-user=sysbench --mysql-password=sysbench --mysql_table_engine=innodb --rand-type=pareto --mysql-db=sbtest --time=60
+   _EXP_NAME=sample _TESTS="oltp_read_only oltp_read_write" _THREADS="1 2 4" _TABLES=64 _SIZE="10 100" ./run_sbmysql.sh --mysql-user=sysbench --mysql-password=sysbench --mysql_table_engine=innodb --rand-type=pareto --mysql-db=sbtest --time=60
 
 
 EOF
