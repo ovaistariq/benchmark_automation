@@ -88,6 +88,6 @@ file=$1
 
 sed -n '/^Threads started/,/.*File operations:$/p' < $file | grep '\[' \
 | sed -e 's/\[//g' -e 's/reads://g' -e 's/writes://g' -e 's/fsyncs://g' -e 's/\/s//g' -e 's/latency.*://g' -e 's/\]//g' \
-| awk '{print $1, $2, $4, $6, $7}' \
+| awk '{print $1","$2","$4","$6","$7}' \
 | sed -E 's/([0-9]+)s/\1/g'
 
