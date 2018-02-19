@@ -13,7 +13,7 @@ EXP_NAME=${EXP_NAME:-sysbench}
 
 # If set then prepare step will be skipped. This is typically used when you
 # want to reuse files created in a previous test run
-REUSE_FILES=
+REUSE_FILES=${REUSE_FILES:-}
 
 # prepare initial data set size to be used for both the tests below
 echo "-- Preparing dataset of size $FILE_TOTAL_SIZE"
