@@ -11,39 +11,34 @@ BENCH_RUN_TIME=${BENCH_RUN_TIME:-300}
 THREADS=${THREADS:-16}
 EXP_NAME=${EXP_NAME:-sysbench}
 
-# helper functions
-prepare_benchmark() {
-    echo "-- Preparing dataset of size $FILE_TOTAL_SIZE"
-    sysbench --test=fileio --file-num=64 --file-total-size="${FILE_TOTAL_SIZE}" prepare
-}
-
-cleanup_benchmark() {
-    echo "-- Cleaning up dataset of size $FILE_TOTAL_SIZE"
-    sysbench --test=fileio --file-num=64 --file-total-size="${FILE_TOTAL_SIZE}" cleanup
-}
-
-run_benchmark() {
-    for thd in $THREADS; do
-        for mode in ${TEST_MODE}; do
-            echo "-- Running benchmark threads: $thd, mode: $mode"
-            sysbench --test=fileio --file-num=64 \
-                --file-total-size="${FILE_TOTAL_SIZE}" \
-                --file-test-mode="${mode}" --file-io-mode="${IO_MODE}" \
-                --file-extra-flags="${FILE_FLAG}" \
-                --file-fsync-freq="${FSYNC_FREQ}" \
-                --file-block-size="${IO_REQUEST_SIZE}" \
-                --time="${BENCH_RUN_TIME}" \
-                --threads="${thd}" --report-interval=10 --percentile=99 run \
-            | tee "$EXP_NAME.thr.$thd.sz.$FILE_TOTAL_SIZE.test.$mode.txt"
-        done
-    done
-}
+# If set then prepare step will be skipped. This is typically used when you
+# want to reuse files created in a previous test run
+REUSE_FILES=
 
 # prepare initial data set size to be used for both the tests below
-prepare_benchmark
+if [ -z $REUSE_FILES ]; then
+    echo "-- Preparing dataset of size $FILE_TOTAL_SIZE"
+    sysbench --test=fileio --file-num=64 --file-total-size="${FILE_TOTAL_SIZE}" prepare
+fi
 
+# run the benchmark now
 echo "---- Benchmarking with total file size of ${FILE_TOTAL_SIZE}"
-run_benchmark
+for thd in $THREADS; do
+    for mode in ${TEST_MODE}; do
+        echo "-- Running benchmark threads: $thd, mode: $mode"
+
+        sysbench --test=fileio --file-num=64 \
+            --file-total-size="${FILE_TOTAL_SIZE}" \
+            --file-test-mode="${mode}" --file-io-mode="${IO_MODE}" \
+            --file-extra-flags="${FILE_FLAG}" \
+            --file-fsync-freq="${FSYNC_FREQ}" \
+            --file-block-size="${IO_REQUEST_SIZE}" \
+            --time="${BENCH_RUN_TIME}" \
+            --threads="${thd}" --report-interval=10 --percentile=99 run \
+        | tee "$EXP_NAME.thr.$thd.sz.$FILE_TOTAL_SIZE.test.$mode.txt"
+    done
+done
 
 # cleaning up initial data set
-cleanup_benchmark
+echo "-- Cleaning up dataset of size $FILE_TOTAL_SIZE"
+sysbench --test=fileio --file-num=64 --file-total-size="${FILE_TOTAL_SIZE}" cleanup
