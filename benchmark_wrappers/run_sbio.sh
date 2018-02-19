@@ -16,10 +16,8 @@ EXP_NAME=${EXP_NAME:-sysbench}
 REUSE_FILES=
 
 # prepare initial data set size to be used for both the tests below
-if [ -z $REUSE_FILES ]; then
-    echo "-- Preparing dataset of size $FILE_TOTAL_SIZE"
-    sysbench --test=fileio --file-num=64 --file-total-size="${FILE_TOTAL_SIZE}" prepare
-fi
+echo "-- Preparing dataset of size $FILE_TOTAL_SIZE"
+sysbench --test=fileio --file-num=64 --file-total-size="${FILE_TOTAL_SIZE}" prepare
 
 # run the benchmark now
 echo "---- Benchmarking with total file size of ${FILE_TOTAL_SIZE}"
@@ -40,5 +38,7 @@ for thd in $THREADS; do
 done
 
 # cleaning up initial data set
-echo "-- Cleaning up dataset of size $FILE_TOTAL_SIZE"
-sysbench --test=fileio --file-num=64 --file-total-size="${FILE_TOTAL_SIZE}" cleanup
+if [ -z $REUSE_FILES ]; then
+    echo "-- Cleaning up dataset of size $FILE_TOTAL_SIZE"
+    sysbench --test=fileio --file-num=64 --file-total-size="${FILE_TOTAL_SIZE}" cleanup
+fi
