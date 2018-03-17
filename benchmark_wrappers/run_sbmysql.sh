@@ -10,6 +10,8 @@ cat <<EOF>&2
    No direct input args, behavior is controlled by the following environment
    variables: 
      - _EXP_NAME : Experiment name. Optional, defaults to 'sysbench'
+     - _TESTS_DIR : The directory containing the test files. Optional, defaults
+       to current directory
      - _TESTS : Quoted list of the tests to run, i.e. "oltp_read_only
        oltp_read_write".
      - _THREADS : Quoted list of the # of threads to use for each run, i.e.
@@ -21,9 +23,9 @@ cat <<EOF>&2
    Any actual input argument will be passed as is to sysbench, so you can run
    this like so:
 
-   _TESTS="oltp_read_only oltp_read_write" _THREADS="16 32" _TABLES=16 _SIZE="1000 10000" ./run_sbmysql.sh --rand-type=pareto --mysql-host=sbhost --mysql-db=sbtest --time=7200
+   _TESTS_DIR=sysbench_tests _TESTS="oltp_read_only oltp_read_write" _THREADS="16 32" _TABLES=16 _SIZE="1000 10000" ./run_sbmysql.sh --rand-type=pareto --mysql-host=sbhost --mysql-db=sbtest --time=7200
 
-   _EXP_NAME=sample _TESTS="oltp_read_only oltp_read_write" _THREADS="1 2 4" _TABLES=64 _SIZE="10 100" ./run_sbmysql.sh --mysql-user=sysbench --mysql-password=sysbench --mysql_table_engine=innodb --rand-type=pareto --mysql-db=sbtest --time=60
+   _EXP_NAME=sample _TESTS_DIR=sysbench_tests _TESTS="oltp_read_only oltp_read_write" _THREADS="1 2 4" _TABLES=64 _SIZE="10 100" ./run_sbmysql.sh --mysql-user=sysbench --mysql-password=sysbench --mysql_table_engine=innodb --rand-type=pareto --mysql-db=sbtest --time=60
 
 
 EOF
@@ -34,25 +36,28 @@ exit 1
 
 [ -z "$_EXP_NAME" ] && _EXP_NAME="sysbench"
 
-SCRIPT_ROOT=$(dirname $(readlink -f $0))
-TEST_DIR=${SCRIPT_ROOT}/../sysbench_tests
-
 for test in $_TESTS; do
-    test_path=${TEST_DIR}/${test}.lua
+    if [ -z "$_TESTS_DIR" ]; then
+        _TESTS_DIR=$(pwd)
+    fi
 
+    test_path=${_TESTS_DIR}/${test}.lua
     if [[ ! -f ${test_path} ]]; then
         echo "Skipping test ${test}, as it is not yet supported"
         continue
     fi
 
+    # Set the LUA search path
+    export LUA_PATH='${_TESTS_DIR}/?.lua;;'
+
     mkdir $test 2>/dev/null #ignore if it exists
     pushd $test
     for threads in $_THREADS; do
-	for size in $_SIZE; do
-	    echo "Starting sysbench for test=$test, threads=$threads, size=$size"
-	    sysbench ${test_path} --db-driver=mysql --threads=$threads --tables=$_TABLES --table-size=$size $* prepare
-	    sysbench ${test_path} --db-driver=mysql --threads=$threads --tables=$_TABLES --table-size=$size --verbosity=0 --report-interval=10 $* run | tee $_EXP_NAME.thr.$threads.sz.$size.test.$test.txt
-	    sysbench ${test_path} --db-driver=mysql --threads=$threads --tables=$_TABLES --table-size=$size $* cleanup
+    for size in $_SIZE; do
+        echo "Starting sysbench for test=$test, threads=$threads, size=$size"
+        sysbench ${test_path} --db-driver=mysql --threads=$threads --tables=$_TABLES --table-size=$size $* prepare
+        sysbench ${test_path} --db-driver=mysql --threads=$threads --tables=$_TABLES --table-size=$size --verbosity=0 --report-interval=10 $* run | tee $_EXP_NAME.thr.$threads.sz.$size.test.$test.txt
+        sysbench ${test_path} --db-driver=mysql --threads=$threads --tables=$_TABLES --table-size=$size $* cleanup
         done
     done
     popd

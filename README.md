@@ -70,6 +70,7 @@ python ./sbio_csv_to_png.py plot_graph -o ./output/experiment_name -c reads -c w
 No direct input args, behavior is controlled by the following environment
 variables:
 * _EXP_NAME : Experiment name. Optional, defaults to 'sysbench'
+* _TESTS_DIR : Directory which contains the test files
 * _TESTS : Quoted list of the tests to run, i.e. "oltp_read_only oltp_read_write"
 * _THREADS : Quoted list of the # of threads to use for each run, i.e. "16 32"
 * _TABLES : Number of tables to use for the tests
@@ -78,9 +79,9 @@ variables:
 Any actual input argument will be passed as is to sysbench, so you can run it
 as below:
 ```bash
-_TESTS="oltp_read_only oltp_read_write" _THREADS="16 32" _TABLES=16 _SIZE="1000 10000" ./run_sbmysql.sh --rand-type=pareto --mysql-host=sbhost --mysql-db=sbtest --time=7200
+_TESTS_DIR=sysbench_tests _TESTS="oltp_read_only oltp_read_write" _THREADS="16 32" _TABLES=16 _SIZE="1000 10000" ./run_sbmysql.sh --rand-type=pareto --mysql-host=sbhost --mysql-db=sbtest --time=7200
 
-_EXP_NAME=sample _TESTS=oltp_read_write _THREADS="1 2 4" _TABLES=64 _SIZE="10 100" ./run_sbmysql.sh --mysql-user=sysbench --mysql-password=sysbench --mysql_table_engine=innodb --rand-type=pareto --mysql-db=sbtest --time=60
+_EXP_NAME=sample _TESTS_DIR=sysbench_tests _TESTS=oltp_read_write _THREADS="1 2 4" _TABLES=64 _SIZE="10 100" ./run_sbmysql.sh --mysql-user=sysbench --mysql-password=sysbench --mysql_table_engine=innodb --rand-type=pareto --mysql-db=sbtest --time=60
 ```
 
 #### Generating graphs
