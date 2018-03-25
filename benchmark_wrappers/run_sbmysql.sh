@@ -48,7 +48,7 @@ for test in $_TESTS; do
     fi
 
     # Set the LUA search path
-    export LUA_PATH='${_TESTS_DIR}/?.lua;;'
+    export LUA_PATH="${_TESTS_DIR}/?.lua;;"
 
     mkdir $test 2>/dev/null #ignore if it exists
     pushd $test
