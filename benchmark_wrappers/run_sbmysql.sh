@@ -50,15 +50,21 @@ for test in $_TESTS; do
     # Set the LUA search path
     export LUA_PATH="${_TESTS_DIR}/?.lua;;"
 
+    PREPARE_THREADS=8
+
     mkdir $test 2>/dev/null #ignore if it exists
     pushd $test
-    for threads in $_THREADS; do
     for size in $_SIZE; do
-        echo "Starting sysbench for test=$test, threads=$threads, size=$size"
-        sysbench ${test_path} --db-driver=mysql --threads=$threads --tables=$_TABLES --table-size=$size "$@" prepare
-        sysbench ${test_path} --db-driver=mysql --threads=$threads --tables=$_TABLES --table-size=$size --verbosity=0 --report-interval=10 "$@" run | tee $_EXP_NAME.thr.$threads.sz.$size.test.$test.txt
-        sysbench ${test_path} --db-driver=mysql --threads=$threads --tables=$_TABLES --table-size=$size "$@" cleanup
+        echo "Starting sysbench for test=$test, size=$size"
+        sysbench ${test_path} --db-driver=mysql --threads=$PREPARE_THREADS --tables=$_TABLES --table-size=$size "$@" cleanup
+        sysbench ${test_path} --db-driver=mysql --threads=$PREPARE_THREADS --tables=$_TABLES --table-size=$size "$@" prepare
+
+        for threads in $_THREADS; do
+            echo "Running sysbench for test=$test, threads=$threads, size=$size"
+            sysbench ${test_path} --db-driver=mysql --threads=$threads --tables=$_TABLES --table-size=$size --verbosity=0 --report-interval=10 "$@" run | tee $_EXP_NAME.thr.$threads.sz.$size.test.$test.txt
         done
+
+        sysbench ${test_path} --db-driver=mysql --threads=$PREPARE_THREADS --tables=$_TABLES --table-size=$size "$@" cleanup
     done
     popd
 done
