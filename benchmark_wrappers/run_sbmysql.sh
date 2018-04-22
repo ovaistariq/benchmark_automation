@@ -3,7 +3,10 @@
 [ -z "$_TESTS" -o \
   -z "$_THREADS" -o \
   -z "$_TABLES" -o \
-  -z "$_SIZE" ] && {
+  -z "$_SIZE" -o \
+  -z "$_MYSQL_USER" -o \
+  -z "$_MYSQL_HOST" -o \
+  -z "$_MYSQL_PASSWORD" ] && {
 cat <<EOF>&2
 
    usage: [env var1=val1 var2=val2 ...] $0
@@ -19,13 +22,17 @@ cat <<EOF>&2
      - _TABLES : Number of tables to use for the tests
      - _SIZE : Quoted list of the table sizes to use, in rows, i.e.
        "100000 1000000 10000000"
+     - _MYSQL_USER : MySQL username to use for the benchmark run
+     - _MYSQL_HOST : MySQL host to connect to for the benchmark run
+     - _MYSQL_PASSWORD : MySQL password to use for the benchmark run
    
    Any actual input argument will be passed as is to sysbench, so you can run
    this like so:
 
-   _TESTS_DIR=sysbench_tests _TESTS="oltp_read_only oltp_read_write" _THREADS="16 32" _TABLES=16 _SIZE="1000 10000" ./run_sbmysql.sh --rand-type=pareto --mysql-host=sbhost --mysql-db=sbtest --time=7200
+   _TESTS_DIR=sysbench_tests _TESTS="oltp_read_only oltp_read_write" _THREADS="16 32" _TABLES=16 _SIZE="1000 10000" ./run_sbmysql.sh --rand-type=pareto --mysql-db=sbtest --time=7200
 
-   _EXP_NAME=sample _TESTS_DIR=sysbench_tests _TESTS="oltp_read_only oltp_read_write" _THREADS="1 2 4" _TABLES=64 _SIZE="10 100" ./run_sbmysql.sh --mysql-user=sysbench --mysql-password=sysbench --mysql_table_engine=innodb --rand-type=pareto --mysql-db=sbtest --time=60
+   _EXP_NAME=sample _TESTS_DIR=sysbench_tests _TESTS="oltp_read_only
+   oltp_read_write" _THREADS="1 2 4" _TABLES=64 _SIZE="10 100" _MYSQL_USER=sysbench _MYSQL_PASSWORD=sysbench _MYSQL_HOST=localhost ./run_sbmysql.sh --mysql_table_engine=innodb --rand-type=pareto --mysql-db=sbtest --time=60
 
 
 EOF
@@ -56,15 +63,27 @@ for test in $_TESTS; do
     pushd $test
     for size in $_SIZE; do
         echo "Starting sysbench for test=$test, size=$size"
-        sysbench ${test_path} --db-driver=mysql --threads=$PREPARE_THREADS --tables=$_TABLES --table-size=$size "$@" cleanup
-        sysbench ${test_path} --db-driver=mysql --threads=$PREPARE_THREADS --tables=$_TABLES --table-size=$size "$@" prepare
+
+        sysbench ${test_path} --db-driver=mysql --threads=$PREPARE_THREADS \
+            --tables=$_TABLES --table-size=$size --mysql-host=$_MYSQL_HOST \
+            --mysql-user=$_MYSQL_USER --mysql-password=$_MYSQL_PASSWORD "$@" cleanup
+
+        sysbench ${test_path} --db-driver=mysql --threads=$PREPARE_THREADS \
+            --tables=$_TABLES --table-size=$size --mysql-host=$_MYSQL_HOST \
+            --mysql-user=$_MYSQL_USER --mysql-password=$_MYSQL_PASSWORD "$@" prepare
 
         for threads in $_THREADS; do
             echo "Running sysbench for test=$test, threads=$threads, size=$size"
-            sysbench ${test_path} --db-driver=mysql --threads=$threads --tables=$_TABLES --table-size=$size --verbosity=0 --report-interval=10 "$@" run | tee $_EXP_NAME.thr.$threads.sz.$size.test.$test.txt
+
+            sysbench ${test_path} --db-driver=mysql --threads=$threads \
+                --tables=$_TABLES --table-size=$size --mysql-host=$_MYSQL_HOST \
+                --mysql-user=$_MYSQL_USER --mysql-password=$_MYSQL_PASSWORD \
+                --verbosity=0 --report-interval=10 "$@" run | tee $_EXP_NAME.thr.$threads.sz.$size.test.$test.txt
         done
 
-        sysbench ${test_path} --db-driver=mysql --threads=$PREPARE_THREADS --tables=$_TABLES --table-size=$size "$@" cleanup
+        sysbench ${test_path} --db-driver=mysql --threads=$PREPARE_THREADS \
+            --tables=$_TABLES --table-size=$size --mysql-host=$_MYSQL_HOST \
+            --mysql-user=$_MYSQL_USER --mysql-password=$_MYSQL_PASSWORD "$@" cleanup
     done
     popd
 done

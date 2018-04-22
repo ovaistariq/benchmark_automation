@@ -75,13 +75,16 @@ variables:
 * _THREADS : Quoted list of the # of threads to use for each run, i.e. "16 32"
 * _TABLES : Number of tables to use for the tests
 * _SIZE : Quoted list of the table sizes to use, in rows, i.e. "100000 1000000 10000000"
+* _MYSQL_USER : MySQL username to use for the benchmark run
+* _MYSQL_HOST : MySQL host to connect to for the benchmark run
+* _MYSQL_PASSWORD : MySQL password to use for the benchmark run
 
 Any actual input argument will be passed as is to sysbench, so you can run it
 as below:
 ```bash
-_TESTS_DIR=sysbench_tests _TESTS="oltp_read_only oltp_read_write" _THREADS="16 32" _TABLES=16 _SIZE="1000 10000" ./run_sbmysql.sh --rand-type=pareto --mysql-host=sbhost --mysql-db=sbtest --time=7200
+_TESTS_DIR=sysbench_tests _TESTS="oltp_read_only oltp_read_write" _THREADS="16 32" _TABLES=16 _SIZE="1000 10000" _MYSQL_HOST=sbhost ./run_sbmysql.sh --rand-type=pareto --mysql-db=sbtest --time=7200
 
-_EXP_NAME=sample _TESTS_DIR=sysbench_tests _TESTS=oltp_read_write _THREADS="1 2 4" _TABLES=64 _SIZE="10 100" ./run_sbmysql.sh --mysql-user=sysbench --mysql-password=sysbench --mysql_table_engine=innodb --rand-type=pareto --mysql-db=sbtest --time=60
+_EXP_NAME=sample _TESTS_DIR=sysbench_tests _TESTS=oltp_read_write _THREADS="1 2 4" _TABLES=64 _SIZE="10 100" _MYSQL_USER=sysbench _MYSQL_PASSWORD=sysbench ./run_sbmysql.sh --mysql_table_engine=innodb --rand-type=pareto --mysql-db=sbtest --time=60
 ```
 
 #### Generating graphs
