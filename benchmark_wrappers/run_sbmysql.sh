@@ -6,7 +6,8 @@
   -z "$_SIZE" -o \
   -z "$_MYSQL_USER" -o \
   -z "$_MYSQL_HOST" -o \
-  -z "$_MYSQL_PASSWORD" ] && {
+  -z "$_MYSQL_PASSWORD" -o \
+  -z "$_DURATION" ] && {
 cat <<EOF>&2
 
    usage: [env var1=val1 var2=val2 ...] $0
@@ -25,15 +26,20 @@ cat <<EOF>&2
      - _MYSQL_USER : MySQL username to use for the benchmark run
      - _MYSQL_HOST : MySQL host to connect to for the benchmark run
      - _MYSQL_PASSWORD : MySQL password to use for the benchmark run
+     - _DURATION : Number of seconds for each benchmark run
      - _LOG_QUERIES : Control slow query logging to capture queries executed
        during the benchmark in slow query log
-   
+     - _COLLECT_MYSQL_STATS : Control collection of MySQL statistics during the
+       benchmark run
+     - _COLLECT_VMSTAT : Control collection vmstat statistics during the
+       benchmark run
+
    Any actual input argument will be passed as is to sysbench, so you can run
    this like so:
 
-   _TESTS_DIR=sysbench_tests _TESTS="oltp_read_only oltp_read_write" _THREADS="16 32" _TABLES=16 _SIZE="1000 10000" ./run_sbmysql.sh --rand-type=pareto --mysql-db=sbtest --time=7200
+   _TESTS_DIR=sysbench_tests _TESTS="oltp_read_only oltp_read_write" _THREADS="16 32" _TABLES=16 _SIZE="1000 10000" _DURATION=60 _MYSQL_USER=sysbench _MYSQL_PASSWORD=sysbench _MYSQL_HOST=localhost ./run_sbmysql.sh --rand-type=pareto --mysql-db=sbtest
 
-   _EXP_NAME=sample _LOG_QUERIES=1 _TESTS_DIR=sysbench_tests _TESTS="oltp_read_only oltp_read_write" _THREADS="1 2 4" _TABLES=64 _SIZE="10 100" _MYSQL_USER=sysbench _MYSQL_PASSWORD=sysbench _MYSQL_HOST=localhost ./run_sbmysql.sh --mysql_table_engine=innodb --rand-type=pareto --mysql-db=sbtest --time=60
+   _EXP_NAME=sample _LOG_QUERIES=1 _TESTS_DIR=sysbench_tests _TESTS="oltp_read_only oltp_read_write" _THREADS="1 2 4" _TABLES=64 _SIZE="10 100" _DURATION=60 _MYSQL_USER=sysbench _MYSQL_PASSWORD=sysbench _MYSQL_HOST=localhost ./run_sbmysql.sh --mysql_table_engine=innodb --rand-type=pareto --mysql-db=sbtest
 
 
 EOF
@@ -66,6 +72,10 @@ for test in $_TESTS; do
         continue
     fi
 
+    # Set the path of helper scripts
+    mysql_stats_script=$(realpath $(dirname $0))/../data_collection_scripts/collect-mysqladmin.sh
+    vmstat_script=$(realpath $(dirname $0))/../data_collection_scripts/collect-vmstat.sh
+
     # Set the LUA search path
     export LUA_PATH="${_TESTS_DIR}/?.lua;;"
 
@@ -90,10 +100,18 @@ for test in $_TESTS; do
                 $MYSQL_CMD -e "SET GLOBAL slow_query_log=1, GLOBAL long_query_time=0"
             fi
 
+            if [[ ! -z $_COLLECT_MYSQL_STATS ]]; then
+                ${mysql_stats_script} 10 $_DURATION $_EXP_NAME.thr.$threads.sz.$size.test.$test &
+            fi
+
+            if [[ ! -z $_COLLECT_VMSTAT ]]; then
+                ${vmstat_script} 10 $_DURATION $_EXP_NAME.thr.$threads.sz.$size.test.$test &
+            fi
+
             sysbench ${test_path} --db-driver=mysql --threads=$threads \
                 --tables=$_TABLES --table-size=$size --mysql-host=$_MYSQL_HOST \
                 --mysql-user=$_MYSQL_USER --mysql-password=$_MYSQL_PASSWORD \
-                --verbosity=0 --report-interval=10 "$@" run | tee $_EXP_NAME.thr.$threads.sz.$size.test.$test.txt
+                --verbosity=0 --report-interval=10 --time=$_DURATION "$@" run | tee $_EXP_NAME.thr.$threads.sz.$size.test.$test.txt
 
 
             if [[ ! -z $_LOG_QUERIES ]]; then
@@ -102,6 +120,9 @@ for test in $_TESTS; do
 
                 echo "$START_TIME,$END_TIME" > $_EXP_NAME.thr.$threads.sz.$size.test.$test.info.txt
             fi
+
+            # Wait for any child processes to finish
+            wait
         done
 
         sysbench ${test_path} --db-driver=mysql --threads=$PREPARE_THREADS \
