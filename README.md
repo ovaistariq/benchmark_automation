@@ -78,13 +78,14 @@ variables:
 * _MYSQL_USER : MySQL username to use for the benchmark run
 * _MYSQL_HOST : MySQL host to connect to for the benchmark run
 * _MYSQL_PASSWORD : MySQL password to use for the benchmark run
+* _LOG_QUERIES : Control slow query logging to capture queries executed during the benchmark in slow query log
 
 Any actual input argument will be passed as is to sysbench, so you can run it
 as below:
 ```bash
-_TESTS_DIR=sysbench_tests _TESTS="oltp_read_only oltp_read_write" _THREADS="16 32" _TABLES=16 _SIZE="1000 10000" _MYSQL_HOST=sbhost ./run_sbmysql.sh --rand-type=pareto --mysql-db=sbtest --time=7200
+_TESTS_DIR=sysbench_tests _TESTS="oltp_read_only oltp_read_write" _THREADS="16 32" _TABLES=16 _SIZE="1000 10000" _MYSQL_HOST=sbhost _MYSQL_USER=sysbench _MYSQL_PASSWORD=sysbench  ./run_sbmysql.sh --rand-type=pareto --mysql-db=sbtest --time=7200
 
-_EXP_NAME=sample _TESTS_DIR=sysbench_tests _TESTS=oltp_read_write _THREADS="1 2 4" _TABLES=64 _SIZE="10 100" _MYSQL_USER=sysbench _MYSQL_PASSWORD=sysbench ./run_sbmysql.sh --mysql_table_engine=innodb --rand-type=pareto --mysql-db=sbtest --time=60
+_EXP_NAME=sample _LOG_QUERIES=1 _TESTS_DIR=sysbench_tests _TESTS=oltp_read_write _THREADS="1 2 4" _TABLES=64 _SIZE="10 100" _MYSQL_HOST=sbhost _MYSQL_USER=sysbench _MYSQL_PASSWORD=sysbench ./run_sbmysql.sh --mysql_table_engine=innodb --rand-type=pareto --mysql-db=sbtest --time=60
 ```
 
 #### Generating graphs
