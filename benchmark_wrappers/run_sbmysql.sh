@@ -84,6 +84,10 @@ for test in $_TESTS; do
     for size in $_SIZE; do
         echo "Starting sysbench for exp=$_EXP_NAME, test=$test, size=$size"
 
+        if [[ ! -z $_LOG_QUERIES ]]; then
+            $MYSQL_CMD -e "SET GLOBAL slow_query_log=0, GLOBAL long_query_time=10"
+        fi
+
         sysbench ${test_path} --db-driver=mysql --threads=$PREPARE_THREADS \
             --tables=$_TABLES --table-size=$size --mysql-host=$_MYSQL_HOST \
             --mysql-user=$_MYSQL_USER --mysql-password=$_MYSQL_PASSWORD "$@" cleanup
