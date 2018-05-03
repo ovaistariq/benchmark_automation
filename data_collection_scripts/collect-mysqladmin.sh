@@ -22,8 +22,8 @@ arg_duration=""
 
 read_first_row=0
 
-$TOOLNAME ext -i $interval $arg_duration -r | grep -v Variable_name \
-    | grep "|" | awk -F '|' '{gsub(/ /, "", $3); print $3}' | tr '\n' ',' \
+$TOOLNAME ext -i $interval $arg_duration -r | grep "|" \
+    | awk -F '|' '{gsub(/ /, "", $3); print $3}' | tr '\n' ',' | sed 's/Value,/\n/g' \
     | while read row; do [ $read_first_row -gt 0 ] && echo "$row"; read_first_row=1; done | gzip -c >> $dest &
 
 echo $! > $dest.pid
