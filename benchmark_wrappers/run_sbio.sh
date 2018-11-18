@@ -17,7 +17,7 @@ REUSE_FILES=${REUSE_FILES:-}
 
 # prepare initial data set size to be used for both the tests below
 echo "-- Preparing dataset of size $FILE_TOTAL_SIZE"
-sysbench --test=fileio --file-num=64 --file-total-size="${FILE_TOTAL_SIZE}" prepare
+sysbench fileio --file-num=64 --file-total-size="${FILE_TOTAL_SIZE}" prepare
 
 # run the benchmark now
 echo "---- Benchmarking with total file size of ${FILE_TOTAL_SIZE}"
@@ -25,7 +25,7 @@ for thd in $THREADS; do
     for mode in ${TEST_MODE}; do
         echo "-- Running benchmark threads: $thd, mode: $mode"
 
-        sysbench --test=fileio --file-num=64 \
+        sysbench fileio --file-num=64 \
             --file-total-size="${FILE_TOTAL_SIZE}" \
             --file-test-mode="${mode}" --file-io-mode="${IO_MODE}" \
             --file-extra-flags="${FILE_FLAG}" \
@@ -40,5 +40,5 @@ done
 # cleaning up initial data set
 if [ -z $REUSE_FILES ]; then
     echo "-- Cleaning up dataset of size $FILE_TOTAL_SIZE"
-    sysbench --test=fileio --file-num=64 --file-total-size="${FILE_TOTAL_SIZE}" cleanup
+    sysbench fileio --file-num=64 --file-total-size="${FILE_TOTAL_SIZE}" cleanup
 fi
