@@ -3,7 +3,7 @@ Scripts to help automate the running of repeatable benchmarks. Currently only
 sysbench is supported.
 
 ## Dependencies
-* sysbench 1.0.13 or higher - [installtion
+* sysbench 1.0.13 or higher - [installation
    instructions](https://github.com/akopytov/sysbench#installing-from-binary-packages).
 
 
